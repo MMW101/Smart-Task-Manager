@@ -459,12 +459,12 @@
             data.goals.forEach((goal, goalIndex) => {
                 const goalDiv = document.createElement('div');
                 goalDiv.className = 'card mb-2 goal-card';
-                goalDiv.innerHTML = `<div class="card-body"><h6>${goal.title} (Target: ${goal.targetDate || 'N/A'})<br><small>${goal.description || 'No description'}</small> <button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex})">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex})">Delete</button></h6></div>`;
+                goalDiv.innerHTML = `<div class="card-body"><h6>${goal.title} (Target: ${goal.targetDate || 'N/A'})<br><small>${goal.description || 'No description'}</small></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex})">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex})">Delete</button></div>`;
                 const projectsDiv = document.createElement('div');
                 goal.projects.forEach((project, projectIndex) => {
                     const projectDiv = document.createElement('div');
                     projectDiv.className = 'card ms-3 mb-2 project-card';
-                    projectDiv.innerHTML = `<div class="card-body"><h6>${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%)<br><small>${project.description || 'No description'}</small> <div class="progress mt-2" style="height: 10px;"><div class="progress-bar bg-success" role="progressbar" style="width: ${project.progress}%;" aria-valuenow="${project.progress}" aria-valuemin="0" aria-valuemax="100"></div></div><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex})">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex})">Delete</button></h6></div>`;
+                    projectDiv.innerHTML = `<div class="card-body"><h6>${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%)<br><small>${project.description || 'No description'}</small><div class="progress mt-2" style="height: 10px;"><div class="progress-bar bg-success" role="progressbar" style="width: ${project.progress}%;" aria-valuenow="${project.progress}" aria-valuemin="0" aria-valuemax="100"></div></div></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex})">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex})">Delete</button></div>`;
                     const tasksUl = document.createElement('ul');
                     tasksUl.className = 'list-group list-group-flush';
                     project.tasks.forEach((task, taskIndex) => {
@@ -580,10 +580,10 @@
 
         function addGoal() {
             const title = document.getElementById('goal-title').value;
-            const description = document.getElementById('goal-description').value;
+            const description = document.getElementById('goal-description').value || '';
             const targetDate = document.getElementById('goal-target-date').value || null;
             if (title) {
-                data.goals.push({ title, description: description || '', targetDate, projects: [] });
+                data.goals.push({ title, description, targetDate, projects: [] });
                 try { localStorage.setItem('taskData', JSON.stringify(data)); } catch(e) { alert('Storage error, clear browser data.'); }
                 document.getElementById('goal-form').reset();
                 hideGoalModal();
@@ -598,7 +598,7 @@
 
         function addProject(goalIndex = null) {
             const title = document.getElementById('project-title').value;
-            const description = document.getElementById('project-description').value;
+            const description = document.getElementById('project-description').value || '';
             const targetDate = document.getElementById('project-target-date').value || null;
             const progress = parseInt(document.getElementById('project-progress').value) || 0;
             const goalSelect = document.getElementById('project-goal-select').value;
@@ -607,9 +607,9 @@
                     goalIndex = goalSelect;
                 }
                 if (goalIndex !== null) {
-                    data.goals[goalIndex].projects.push({ title, description: description || '', targetDate, tasks: [], progress });
+                    data.goals[goalIndex].projects.push({ title, description, targetDate, tasks: [], progress });
                 } else {
-                    data.goals.push({ title: 'Unnamed Goal', targetDate: null, description: '', projects: [{ title, description: description || '', targetDate, tasks: [], progress }] });
+                    data.goals.push({ title: 'Unnamed Goal', targetDate: null, description: '', projects: [{ title, description, targetDate, tasks: [], progress }] });
                 }
                 try { localStorage.setItem('taskData', JSON.stringify(data)); } catch(e) { alert('Storage error, clear browser data.'); }
                 document.getElementById('project-form').reset();
@@ -1028,7 +1028,7 @@
 
         function saveEdit() {
             const title = document.getElementById('edit-title').value;
-            const description = document.getElementById('edit-description').value || null;
+            const description = document.getElementById('edit-description').value || '';
             const targetDate = document.getElementById('edit-target-date').value || null;
             const progress = document.getElementById('edit-progress') ? parseInt(document.getElementById('edit-progress').value) || 0 : null;
             const priority = document.getElementById('edit-priority') ? document.getElementById('edit-priority').value : null;
