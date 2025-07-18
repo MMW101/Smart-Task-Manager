@@ -18,13 +18,14 @@
         .card {
             border: none;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            background: white;
-            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .card:hover {
-            transform: scale(1.02);
+            transform: scale(1.03);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
         .navbar {
             background: linear-gradient(90deg, #4a90e2, #50e3c2);
@@ -32,10 +33,12 @@
         }
         .navbar .nav-link {
             color: white !important;
-            margin: 0 10px;
+            margin: 0 12px;
+            font-weight: 500;
         }
         .navbar .nav-link:hover {
             color: #ffd700 !important;
+            text-decoration: underline;
         }
         .btn-success {
             background-color: #4a90e2;
@@ -51,6 +54,42 @@
         .priority-medium { background-color: #fff3cd; }
         .priority-high { background-color: #f8d7da; }
 
+        /* Hierarchical View Styling */
+        .goal-card {
+            background: linear-gradient(135deg, #e6f0fa, #ffffff);
+            padding: 10px;
+        }
+        .project-card {
+            background: linear-gradient(135deg, #f0f4f8, #ffffff);
+            margin-left: 20px;
+            padding: 8px;
+        }
+        .task-item {
+            background: linear-gradient(135deg, #f9f9f9, #ffffff);
+            margin-left: 40px;
+            padding: 6px;
+            border-radius: 5px;
+        }
+        .collapsible {
+            cursor: pointer;
+            padding: 8px;
+            margin-bottom: 5px;
+        }
+        .collapsible:hover {
+            background-color: #e9ecef;
+        }
+        .content {
+            display: none;
+            padding-left: 20px;
+        }
+        .content.show {
+            display: block;
+        }
+        .small {
+            font-size: 0.85em;
+            color: #666;
+        }
+
         /* Calendar Styling */
         #calendar {
             padding: 20px;
@@ -65,16 +104,16 @@
         #calendar-table th {
             background: #4a90e2;
             color: white;
-            padding: 10px;
+            padding: 12px;
             text-align: center;
             border-radius: 5px;
         }
         #calendar-table td {
-            height: 80px;
+            height: 90px;
             vertical-align: top;
             background: #f8f9fa;
             border-radius: 5px;
-            padding: 5px;
+            padding: 8px;
             transition: background 0.3s;
         }
         #calendar-table td:hover {
@@ -94,6 +133,8 @@
             h1 { font-size: 1.5rem; }
             .navbar .nav-link { margin: 0 5px; }
             .btn { font-size: 0.9rem; padding: 0.25rem 0.5rem; }
+            .project-card { margin-left: 10px; }
+            .task-item { margin-left: 20px; }
         }
     </style>
 </head>
@@ -412,7 +453,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let data = JSON.parse(localStorage.getItem('taskData')) || { goals: [], archived: [], standaloneTasks: [] };
-        let currentMonth = new Date('2025-07-14T13:25:00Z');
+        let currentMonth = new Date('2025-07-18T17:36:00Z');
 
         function initializeApp() {
             updateDashboard();
@@ -433,16 +474,16 @@
         function updateDashboard() {
             const totalGoals = data.goals.length;
             const totalProjects = data.goals.reduce((sum, goal) => sum + goal.projects.length, 0);
-            const upcomingItems = data.goals.reduce((sum, goal) => sum + goal.projects.reduce((pSum, project) => pSum + (new Date(project.targetDate || '9999-12-31') <= new Date('2025-07-14T13:25:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0) + project.tasks.filter(task => {
+            const upcomingItems = data.goals.reduce((sum, goal) => sum + goal.projects.reduce((pSum, project) => pSum + (new Date(project.targetDate || '9999-12-31') <= new Date('2025-07-18T17:36:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0) + project.tasks.filter(task => {
                 const dueDate = new Date(task.dueDate);
-                const today = new Date('2025-07-14T13:25:00Z');
+                const today = new Date('2025-07-18T17:36:00Z');
                 today.setHours(0, 0, 0, 0);
                 dueDate.setHours(0, 0, 0, 0);
                 return dueDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) && !task.archived;
-            }).length, 0) + (new Date(goal.targetDate || '9999-12-31') <= new Date('2025-07-14T13:25:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0), 0) +
+            }).length, 0) + (new Date(goal.targetDate || '9999-12-31') <= new Date('2025-07-18T17:36:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0), 0) +
                 data.standaloneTasks.filter(task => {
                     const dueDate = new Date(task.dueDate);
-                    const today = new Date('2025-07-14T13:25:00Z');
+                    const today = new Date('2025-07-18T17:36:00Z');
                     today.setHours(0, 0, 0, 0);
                     dueDate.setHours(0, 0, 0, 0);
                     return dueDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) && !task.archived;
@@ -458,26 +499,27 @@
             content.innerHTML = '';
             data.goals.forEach((goal, goalIndex) => {
                 const goalDiv = document.createElement('div');
-                goalDiv.className = 'card mb-2 goal-card';
-                goalDiv.innerHTML = `<div class="card-body"><h6>${goal.title} (Target: ${goal.targetDate || 'N/A'})<br><small>${goal.description || 'No description'}</small></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex})">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex})">Delete</button></div>`;
+                goalDiv.className = 'goal-card';
+                goalDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${goal.title} (Target: ${goal.targetDate || 'N/A'})<br><span class="small">${goal.description || 'No description'}</span></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex}); event.stopPropagation();">Delete</button></div>`;
                 const projectsDiv = document.createElement('div');
+                projectsDiv.className = 'content';
                 goal.projects.forEach((project, projectIndex) => {
                     const projectDiv = document.createElement('div');
-                    projectDiv.className = 'card ms-3 mb-2 project-card';
-                    projectDiv.innerHTML = `<div class="card-body"><h6>${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%)<br><small>${project.description || 'No description'}</small><div class="progress mt-2" style="height: 10px;"><div class="progress-bar bg-success" role="progressbar" style="width: ${project.progress}%;" aria-valuenow="${project.progress}" aria-valuemin="0" aria-valuemax="100"></div></div></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex})">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex})">Delete</button></div>`;
+                    projectDiv.className = 'project-card';
+                    projectDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%)<br><span class="small">${project.description || 'No description'}</span><div class="progress mt-1" style="height: 8px;"><div class="progress-bar bg-success" role="progressbar" style="width: ${project.progress}%;" aria-valuenow="${project.progress}" aria-valuemin="0" aria-valuemax="100"></div></div></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Delete</button></div>`;
                     const tasksUl = document.createElement('ul');
-                    tasksUl.className = 'list-group list-group-flush';
+                    tasksUl.className = 'content list-group list-group-flush';
                     project.tasks.forEach((task, taskIndex) => {
                         if (!task.archived) {
                             const taskLi = document.createElement('li');
-                            taskLi.className = `list-group-item ${task.type} ${task.completed ? 'completed' : ''} priority-${task.priority}`;
+                            taskLi.className = `task-item list-group-item ${task.type} ${task.completed ? 'completed' : ''} priority-${task.priority}`;
                             taskLi.innerHTML = `
                                 ${task.title} (${task.type === 'recurring' ? 'Recurring' : 'One-Time'}) (Due: ${task.dueDate}, Priority: ${task.priority})
-                                <br>Status: ${task.completed ? 'Completed' : 'Pending'}
-                                <button class="btn btn-sm btn-success ms-2" onclick="toggleTask(${goalIndex}, ${projectIndex}, ${taskIndex})">Toggle</button>
-                                <button class="btn btn-sm btn-warning ms-2" onclick="editTask(${goalIndex}, ${projectIndex}, ${taskIndex})">Edit</button>
-                                <button class="btn btn-sm btn-danger ms-2" onclick="deleteTask(${goalIndex}, ${projectIndex}, ${taskIndex})">Delete</button>
-                                <button class="btn btn-sm btn-warning ms-2" onclick="archiveTask(${goalIndex}, ${projectIndex}, ${taskIndex})">Archive</button>
+                                <br><span class="small">Status: ${task.completed ? 'Completed' : 'Pending'}</span>
+                                <button class="btn btn-sm btn-success ms-2" onclick="toggleTask(${goalIndex}, ${projectIndex}, ${taskIndex}); event.stopPropagation();">Toggle</button>
+                                <button class="btn btn-sm btn-warning ms-2" onclick="editTask(${goalIndex}, ${projectIndex}, ${taskIndex}); event.stopPropagation();">Edit</button>
+                                <button class="btn btn-sm btn-danger ms-2" onclick="deleteTask(${goalIndex}, ${projectIndex}, ${taskIndex}); event.stopPropagation();">Delete</button>
+                                <button class="btn btn-sm btn-warning ms-2" onclick="archiveTask(${goalIndex}, ${projectIndex}, ${taskIndex}); event.stopPropagation();">Archive</button>
                             `;
                             tasksUl.appendChild(taskLi);
                         }
@@ -493,6 +535,13 @@
                 addProjectBtn.onclick = () => showProjectModal(goalIndex);
                 content.appendChild(addProjectBtn);
             });
+        }
+
+        function toggleContent(element) {
+            const content = element.nextElementSibling;
+            if (content) {
+                content.classList.toggle('show');
+            }
         }
 
         function renderCalendar() {
@@ -512,7 +561,7 @@
                     const date = new Date(startDay.getTime() + (i * 7 + j) * 24 * 60 * 60 * 1000);
                     if (date.getMonth() === firstDay.getMonth()) {
                         cell.textContent = date.getDate();
-                        if (date.toDateString() === new Date('2025-07-14T13:25:00Z').toDateString()) cell.style.background = '#ffeb3b';
+                        if (date.toDateString() === new Date('2025-07-18T17:36:00Z').toDateString()) cell.style.background = '#ffeb3b';
                         const items = [
                             ...data.goals.filter(goal => new Date(goal.targetDate || '9999-12-31').toDateString() === date.toDateString()),
                             ...data.goals.reduce((all, goal) => all.concat(goal.projects.filter(project => new Date(project.targetDate || '9999-12-31').toDateString() === date.toDateString())), []),
@@ -935,7 +984,7 @@
         }
 
         function checkDueDates() {
-            const today = new Date('2025-07-14T13:25:00Z');
+            const today = new Date('2025-07-18T17:36:00Z');
             const tasks = [...data.goals.flatMap(g => g.projects.flatMap(p => p.tasks)), ...data.standaloneTasks];
             tasks.forEach(task => {
                 const dueDate = new Date(task.dueDate);
