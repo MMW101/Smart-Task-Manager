@@ -1,0 +1,8 @@
+{
+    "name": "Smart Task Manager",
+    "short_name": "TaskMgr",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f0f2f5",
+    "theme_color": "#4a90e2"
+}
