@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Task Manager - Enhanced Version</title>
+    <link rel="manifest" href="/manifest.json">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -129,12 +130,19 @@
 
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
-            .card { width: 100%; margin-bottom: 10px; }
-            h1 { font-size: 1.5rem; }
-            .navbar .nav-link { margin: 0 5px; }
-            .btn { font-size: 0.9rem; padding: 0.25rem 0.5rem; }
+            .navbar-nav { display: none; }
+            .navbar-toggler { display: block; }
+            .navbar-nav.show { display: flex; flex-direction: column; }
+            .card { margin-bottom: 10px; padding: 10px; }
+            h1 { font-size: 1.8rem; }
+            h6 { font-size: 1.1rem; }
+            .col-md-4 { margin-bottom: 15px; }
+            .btn { min-width: 80px; margin: 2px; font-size: 0.8rem; padding: 0.2rem 0.4rem; }
             .project-card { margin-left: 10px; }
             .task-item { margin-left: 20px; }
+            .modal-content { padding: 10px; }
+            .modal-body .mb-3 { margin-bottom: 8px; }
+            .form-control, .form-select { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -145,16 +153,23 @@
         <!-- Navigation -->
         <nav class="navbar navbar-expand-lg navbar-light mb-4">
             <div class="container-fluid">
-                <div class="navbar-nav">
-                    <a class="nav-link" href="#dashboard">Dashboard</a>
-                    <a class="nav-link active" href="#hierarchical">Hierarchical</a>
-                    <a class="nav-link" href="#calendar">Calendar</a>
-                    <a class="nav-link" href="#list">List</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="navbar-nav">
+                        <a class="nav-link" href="#dashboard">Dashboard</a>
+                        <a class="nav-link active" href="#hierarchical">Hierarchical</a>
+                        <a class="nav-link" href="#calendar">Calendar</a>
+                        <a class="nav-link" href="#list">List</a>
+                    </div>
                 </div>
-                <button class="btn btn-success" onclick="showTaskModal()">Add Task</button>
-                <button class="btn btn-success ms-2" onclick="showStandaloneTaskModal()">Add Standalone Task</button>
-                <button class="btn btn-success ms-2" onclick="showGoalModal()">Add Goal</button>
-                <button class="btn btn-success ms-2" onclick="showProjectModal()">Add Project</button>
+                <div>
+                    <button class="btn btn-success" onclick="showTaskModal()">Add Task</button>
+                    <button class="btn btn-success ms-2" onclick="showStandaloneTaskModal()">Add Standalone</button>
+                    <button class="btn btn-success ms-2" onclick="showGoalModal()">Add Goal</button>
+                    <button class="btn btn-success ms-2" onclick="showProjectModal()">Add Project</button>
+                </div>
             </div>
         </nav>
 
@@ -191,6 +206,7 @@
                 <button class="btn btn-primary mt-3" onclick="exportData()">Export Data</button>
                 <input type="file" class="form-control mt-2" id="importFile" onchange="importData(event)">
                 <button class="btn btn-danger mt-3" onclick="deleteAllData()">Delete All Data</button>
+                <button class="btn btn-primary mt-3" onclick="exportToCalendar()">Export to Calendar</button>
             </div>
         </div>
 
@@ -453,7 +469,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let data = JSON.parse(localStorage.getItem('taskData')) || { goals: [], archived: [], standaloneTasks: [] };
-        let currentMonth = new Date('2025-07-18T17:36:00Z');
+        let currentMonth = new Date('2025-07-20T14:39:00Z');
 
         function initializeApp() {
             updateDashboard();
@@ -469,21 +485,30 @@
             document.getElementById('project-form').onsubmit = function(e) { e.preventDefault(); addProject(); };
             document.getElementById('edit-form').onsubmit = function(e) { e.preventDefault(); saveEdit(); };
             checkDueDates();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').then(() => console.log('SW registered'));
+            }
+            document.querySelectorAll('#calendar-table td').forEach(cell => {
+                cell.addEventListener('click', function() {
+                    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), parseInt(this.textContent));
+                    alert(`Tasks on ${date.toDateString()}: ${getTasksForDate(date).join(', ')}`);
+                });
+            });
         }
 
         function updateDashboard() {
             const totalGoals = data.goals.length;
             const totalProjects = data.goals.reduce((sum, goal) => sum + goal.projects.length, 0);
-            const upcomingItems = data.goals.reduce((sum, goal) => sum + goal.projects.reduce((pSum, project) => pSum + (new Date(project.targetDate || '9999-12-31') <= new Date('2025-07-18T17:36:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0) + project.tasks.filter(task => {
+            const upcomingItems = data.goals.reduce((sum, goal) => sum + goal.projects.reduce((pSum, project) => pSum + (new Date(project.targetDate || '9999-12-31') <= new Date('2025-07-20T14:39:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0) + project.tasks.filter(task => {
                 const dueDate = new Date(task.dueDate);
-                const today = new Date('2025-07-18T17:36:00Z');
+                const today = new Date('2025-07-20T14:39:00Z');
                 today.setHours(0, 0, 0, 0);
                 dueDate.setHours(0, 0, 0, 0);
                 return dueDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) && !task.archived;
-            }).length, 0) + (new Date(goal.targetDate || '9999-12-31') <= new Date('2025-07-18T17:36:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0), 0) +
+            }).length, 0) + (new Date(goal.targetDate || '9999-12-31') <= new Date('2025-07-20T14:39:00Z').getTime() + 7 * 24 * 60 * 60 * 1000 ? 1 : 0), 0) +
                 data.standaloneTasks.filter(task => {
                     const dueDate = new Date(task.dueDate);
-                    const today = new Date('2025-07-18T17:36:00Z');
+                    const today = new Date('2025-07-20T14:39:00Z');
                     today.setHours(0, 0, 0, 0);
                     dueDate.setHours(0, 0, 0, 0);
                     return dueDate <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) && !task.archived;
@@ -500,13 +525,13 @@
             data.goals.forEach((goal, goalIndex) => {
                 const goalDiv = document.createElement('div');
                 goalDiv.className = 'goal-card';
-                goalDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${goal.title} (Target: ${goal.targetDate || 'N/A'})<br><span class="small">${goal.description || 'No description'}</span></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex}); event.stopPropagation();">Delete</button></div>`;
+                goalDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${goal.title} (Target: ${goal.targetDate || 'N/A'}) <span class="small">${goal.description || 'No description'}</span> <span>▼</span></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editGoal(${goalIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end" onclick="deleteGoal(${goalIndex}); event.stopPropagation();">Delete</button></div>`;
                 const projectsDiv = document.createElement('div');
                 projectsDiv.className = 'content';
                 goal.projects.forEach((project, projectIndex) => {
                     const projectDiv = document.createElement('div');
                     projectDiv.className = 'project-card';
-                    projectDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%)<br><span class="small">${project.description || 'No description'}</span><div class="progress mt-1" style="height: 8px;"><div class="progress-bar bg-success" role="progressbar" style="width: ${project.progress}%;" aria-valuenow="${project.progress}" aria-valuemin="0" aria-valuemax="100"></div></div></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Delete</button></div>`;
+                    projectDiv.innerHTML = `<div class="collapsible" onclick="toggleContent(this)"><h6 style="margin: 0;">${project.title} (Target: ${project.targetDate || 'N/A'}, Progress: ${project.progress || 0}%) <span class="small">${project.description || 'No description'}</span> <span>▼</span></h6><button class="btn btn-warning btn-sm float-end me-2" onclick="editProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Edit</button><button class="btn btn-danger btn-sm float-end me-2" onclick="deleteProject(${goalIndex}, ${projectIndex}); event.stopPropagation();">Delete</button></div>`;
                     const tasksUl = document.createElement('ul');
                     tasksUl.className = 'content list-group list-group-flush';
                     project.tasks.forEach((task, taskIndex) => {
@@ -561,7 +586,7 @@
                     const date = new Date(startDay.getTime() + (i * 7 + j) * 24 * 60 * 60 * 1000);
                     if (date.getMonth() === firstDay.getMonth()) {
                         cell.textContent = date.getDate();
-                        if (date.toDateString() === new Date('2025-07-18T17:36:00Z').toDateString()) cell.style.background = '#ffeb3b';
+                        if (date.toDateString() === new Date('2025-07-20T14:39:00Z').toDateString()) cell.style.background = '#ffeb3b';
                         const items = [
                             ...data.goals.filter(goal => new Date(goal.targetDate || '9999-12-31').toDateString() === date.toDateString()),
                             ...data.goals.reduce((all, goal) => all.concat(goal.projects.filter(project => new Date(project.targetDate || '9999-12-31').toDateString() === date.toDateString())), []),
@@ -954,6 +979,24 @@
             document.body.removeChild(downloadAnchor);
         }
 
+        function exportToCalendar() {
+            const tasks = [...data.goals.flatMap(g => g.projects.flatMap(p => p.tasks)), ...data.standaloneTasks];
+            let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\n';
+            tasks.forEach(task => {
+                if (!task.archived && !task.completed) {
+                    ics += `BEGIN:VEVENT\nSUMMARY:${task.title}\nDTSTART:${new Date(task.dueDate).toISOString().replace(/[:-]/g, '').split('.')[0]}Z\nDUE:${new Date(task.dueDate).toISOString().replace(/[:-]/g, '').split('.')[0]}Z\nEND:VEVENT\n`;
+                }
+            });
+            ics += 'END:VCALENDAR';
+            const dataStr = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute('href', dataStr);
+            downloadAnchor.setAttribute('download', 'tasks.ics');
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+        }
+
         function importData(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -984,7 +1027,7 @@
         }
 
         function checkDueDates() {
-            const today = new Date('2025-07-18T17:36:00Z');
+            const today = new Date('2025-07-20T14:39:00Z');
             const tasks = [...data.goals.flatMap(g => g.projects.flatMap(p => p.tasks)), ...data.standaloneTasks];
             tasks.forEach(task => {
                 const dueDate = new Date(task.dueDate);
@@ -1138,6 +1181,13 @@
         }
 
         document.getElementById('goal-select').onchange = populateProjectSelect;
+
+        function getTasksForDate(date) {
+            return [
+                ...data.goals.flatMap(g => g.projects.flatMap(p => p.tasks.filter(t => new Date(t.dueDate).toDateString() === date.toDateString() && !t.archived))),
+                ...data.standaloneTasks.filter(t => new Date(t.dueDate).toDateString() === date.toDateString() && !t.archived)
+            ].map(t => t.title);
+        }
     </script>
 </body>
 </html>
